@@ -16,7 +16,7 @@ const notificationsRoutes = require("./routes/notificationsRoutes")
 const tasksRoutes = require("./routes/tasksRoutes")
 
 const app = express()
-const PORT = process.env.PORT
+const PORT = "https://employee-management-system-d658.onrender.com"
 
 // ✅ 1. CORS (allow frontend + send credentials)
 app.use(
@@ -73,7 +73,7 @@ app.use("/api/tasks", tasksRoutes)
 createTables()
   .then(() => {
       app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
+    console.log(`Server is running on port https://employee-management-system-d658.onrender.com`);
   })
   })
   .catch((err) => {
