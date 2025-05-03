@@ -8,7 +8,7 @@ export default defineConfig({
     outDir: 'dist' // Output directory
   },
   server: {
-    port: 3000, // Customize port if needed
+    port: 5000, // Customize port if needed
     open: true, // Automatically open the app in the browser
   },
 })
