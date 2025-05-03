@@ -88,14 +88,14 @@ app.use((err, req, res, next) => {
 });
 
 // Port Configuration
-const PORT = process.env.PORT || 5000;
+const BACKEND_URL = process.env.BACKEND_URL || `http://localhost:${PORT}`;
 
 // Create tables and start the server
 createTables()
   .then(() => {
     app.listen(PORT, () => {
-      console.log(`Server running on http://localhost:${PORT}`);
-    });
+    console.log(`Server running on ${BACKEND_URL}`);
+});
   })
   .catch((err) => {
     console.error("Could not start the server:", err);
