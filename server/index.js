@@ -27,8 +27,9 @@ app.use((req, res, next) => {
 // ✅ 1. CORS (allow frontend + send credentials)
 app.use(
   cors({
-    origin: process.env.CLIENT_URL || "https://employee-management-system-1-1wvc.onrender.com",
+    origin:"https://employee-management-system-1-1wvc.onrender.com",
     credentials: true,
+    methods: 'GET,POST,PUT,DELETE',
   }),
 )
 
