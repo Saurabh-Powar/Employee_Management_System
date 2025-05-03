@@ -1,14 +1,22 @@
 import axios from "axios";
+import axiosRetry from "axios-retry";
 
 // Validate baseURL
+if (!process.env.REACT_APP_API_URL && process.env.NODE_ENV === "production") {
+  throw new Error("REACT_APP_API_URL is not defined. Please set it in the environment for production.");
+}
+
 if (!process.env.REACT_APP_API_URL) {
-  console.error("REACT_APP_API_URL is not defined. Please set it in the environment.");
+  console.error("REACT_APP_API_URL is not defined. Current environment:", process.env.NODE_ENV);
 }
 
 const api = axios.create({
   baseURL: process.env.REACT_APP_API_URL || "http://localhost:5000/api", // Default to localhost for development
   withCredentials: true,
 });
+
+// Add retry mechanism
+axiosRetry(api, { retries: 3 });
 
 // Add request interceptor to ensure auth headers are sent
 api.interceptors.request.use(
@@ -106,7 +114,10 @@ export const getTodayStatus = async (employeeId) => {
 };
 
 // Handling manager-specific logic for fetching attendance data
-export const getAttendanceForRole = async (employeeId, role, page = 1, limit = 10) => {
+const DEFAULT_PAGE = process.env.REACT_APP_DEFAULT_PAGE || 1;
+const DEFAULT_LIMIT = process.env.REACT_APP_DEFAULT_LIMIT || 10;
+
+export const getAttendanceForRole = async (employeeId, role, page = DEFAULT_PAGE, limit = DEFAULT_LIMIT) => {
   try {
     if (role === "manager" || role === "admin") {
       const res = await api.get(`/attendance/?page=${page}&limit=${limit}`);
