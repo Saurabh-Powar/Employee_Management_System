@@ -16,7 +16,7 @@ const notificationsRoutes = require("./routes/notificationsRoutes")
 const tasksRoutes = require("./routes/tasksRoutes")
 
 const app = express()
-const PORT = process.env.PORT || 3000
+const PORT = process.env.PORT
 
 // ✅ 1. CORS (allow frontend + send credentials)
 app.use(
@@ -31,7 +31,6 @@ app.use(bodyParser.json())
 app.use(bodyParser.urlencoded({ extended: true }))
 
 // ✅ 3. Sessions
-const session = require('express-session');
 const pgSession = require('connect-pg-simple')(session); // Import connect-pg-simple
 const { Pool } = require('pg'); // Import pg for PostgreSQL connection
 
