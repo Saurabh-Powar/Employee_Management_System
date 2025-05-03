@@ -17,6 +17,13 @@ const tasksRoutes = require("./routes/tasksRoutes")
 
 const app = express()
 
+
+app.use((req, res, next) => {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+});
+
 // ✅ 1. CORS (allow frontend + send credentials)
 app.use(
   cors({
