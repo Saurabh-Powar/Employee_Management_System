@@ -7,6 +7,9 @@ import "./index.css"
 // Create root for React 18+ usage
 const root = ReactDOM.createRoot(document.getElementById("root"))
 
+const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
+console.log("Backend API URL:", apiBaseUrl);
+
 root.render(
   <React.StrictMode>
     <AuthProvider>
