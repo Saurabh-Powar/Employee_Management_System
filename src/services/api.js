@@ -1,8 +1,12 @@
 import axios from "axios";
 
-// Use environment variable for baseURL
+// Validate baseURL
+if (!process.env.REACT_APP_API_URL) {
+  console.error("REACT_APP_API_URL is not defined. Please set it in the environment.");
+}
+
 const api = axios.create({
-  baseURL: process.env.REACT_APP_API_URL || "http://localhost:5000/api", // Default to localhost if env variable is not set
+  baseURL: process.env.REACT_APP_API_URL || "http://localhost:5000/api", // Default to localhost for development
   withCredentials: true,
 });
 
@@ -28,8 +32,10 @@ api.interceptors.response.use(
   (error) => {
     if (error.response && (error.response.status === 401 || error.response.status === 403)) {
       console.error("Authentication error:", error.response.data);
-      // Redirect to login page if authentication fails
-      window.location.href = "/login";
+      if (window.location.pathname !== "/login") {
+        alert("Your session has expired. Please log in again.");
+        window.location.href = "/login";
+      }
     }
     return Promise.reject(error);
   }
@@ -71,7 +77,15 @@ export const tasksAPI = {
       throw error;
     }
   },
-  getEmployeeTasks: (employeeId) => api.get(`/tasks/${employeeId}`),
+  getEmployeeTasks: async (employeeId) => {
+    try {
+      const response = await api.get(`/tasks/${employeeId}`);
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching employee tasks:", error);
+      throw error;
+    }
+  },
   createTask: (data) => api.post("/tasks", data),
   updateTaskStatus: (id, status) => api.put(`/tasks/${id}/status`, { status }),
   deleteTask: (id) => api.delete(`/tasks/${id}`),
@@ -92,10 +106,10 @@ export const getTodayStatus = async (employeeId) => {
 };
 
 // Handling manager-specific logic for fetching attendance data
-export const getAttendanceForRole = async (employeeId, role) => {
+export const getAttendanceForRole = async (employeeId, role, page = 1, limit = 10) => {
   try {
     if (role === "manager" || role === "admin") {
-      const res = await api.get(`/attendance/`);
+      const res = await api.get(`/attendance/?page=${page}&limit=${limit}`);
       return res.data;
     } else {
       return await getTodayStatus(employeeId);
