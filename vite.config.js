@@ -9,7 +9,7 @@ export default defineConfig({
     outDir: 'dist' // Output directory
   }
   server: {
-    port: "https://employee-management-system-d658.onrender.com", // Customize port if needed
+    port: 5000, // Customize port if needed
     open: true, // Automatically open the app in the browser
   },
 })
