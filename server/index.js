@@ -17,6 +17,13 @@ const tasksRoutes = require("./routes/tasksRoutes")
 
 const app = express()
 
+const axiosInstance = axios.create({
+  baseURL: 'https://employee-management-system-1-1wvc.onrender.com',
+  withCredentials: true, // Include this if authentication tokens or cookies are required
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
 
 app.use((req, res, next) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
