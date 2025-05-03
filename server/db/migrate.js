@@ -12,7 +12,7 @@ const createTables = async () => {
 )
 WITH (OIDS=FALSE);
 
-CREATE INDEX "IDX_session_expire" ON "sessions" ("expire");
+CREATE INDEX IF NOT EXISTS "IDX_session_expire" ON "sessions" ("expire");
 
       CREATE TABLE IF NOT EXISTS users (
         id SERIAL PRIMARY KEY,
