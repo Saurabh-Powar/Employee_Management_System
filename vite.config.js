@@ -11,5 +11,5 @@ export default defineConfig({
   server: {
     port: 5000, // Customize port if needed
     open: true, // Automatically open the app in the browser
-  },
+  }
 })
