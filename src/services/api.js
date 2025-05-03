@@ -1,17 +1,32 @@
+// src/services/api.js
+
 import axios from "axios";
 import axiosRetry from "axios-retry";
 
-// Validate baseURL
-if (!process.env.REACT_APP_API_URL && process.env.NODE_ENV === "production") {
-  throw new Error("REACT_APP_API_URL is not defined. Please set it in the environment for production.");
-}
+// Environment variable validation
+const validateEnvironment = () => {
+  if (!process.env.REACT_APP_API_URL) {
+    if (process.env.NODE_ENV === "production") {
+      throw new Error(
+        "REACT_APP_API_URL is not defined. Please set it in the environment for production."
+      );
+    } else {
+      console.warn(
+        "REACT_APP_API_URL is not defined. Defaulting to localhost for development."
+      );
+    }
+  }
+};
 
-if (!process.env.REACT_APP_API_URL) {
-  console.error("REACT_APP_API_URL is not defined. Current environment:", process.env.NODE_ENV);
-}
+// Call validation before creating the API instance.
+validateEnvironment();
 
+// Default API URL for development fallback
+const DEFAULT_API_URL = "http://localhost:5000/api";
+
+// Create Axios instance
 const api = axios.create({
-  baseURL: process.env.REACT_APP_API_URL || "http://localhost:5000/api", // Default to localhost for development
+  baseURL: process.env.REACT_APP_API_URL || DEFAULT_API_URL,
   withCredentials: true,
 });
 
@@ -48,87 +63,5 @@ api.interceptors.response.use(
     return Promise.reject(error);
   }
 );
-
-// Attendance-related helpers
-export const attendanceAPI = {
-  checkIn: (employee_id) => api.post("/attendance/checkin", { employeeId: employee_id }),
-  checkOut: (employee_id) => api.put("/attendance/checkout", { employeeId: employee_id }),
-  markAbsent: (employee_id) => api.post("/attendance/absent", { employeeId: employee_id }),
-  getEmployeeAttendanceStatus: (employee_id) => api.get(`/attendance/${employee_id}`),
-  getAllAttendanceRecords: () => api.get("/attendance"),
-};
-
-// Salary-related helpers
-export const salaryAPI = {
-  getAllSalaries: () => api.get("/salaries"),
-  getEmployeeSalaries: (employee_id) => api.get(`/salaries/${employee_id}`),
-  createSalary: (data) => api.post("/salaries", data),
-  updateSalaryStatus: (id, status) => api.put(`/salaries/${id}`, { status }),
-};
-
-// Leave-related helpers
-export const leavesAPI = {
-  getAllLeaves: () => api.get("/leaves"),
-  getEmployeeLeaves: (employeeId) => api.get(`/leaves/${employeeId}`),
-  createLeave: (data) => api.post("/leaves", data),
-  updateLeaveStatus: (id, status) => api.put(`/leaves/${id}`, { status }),
-};
-
-// Task-related helpers
-export const tasksAPI = {
-  getAllTasks: async () => {
-    try {
-      const response = await api.get("/tasks");
-      return response.data;
-    } catch (error) {
-      console.error("Error fetching tasks:", error);
-      throw error;
-    }
-  },
-  getEmployeeTasks: async (employeeId) => {
-    try {
-      const response = await api.get(`/tasks/${employeeId}`);
-      return response.data;
-    } catch (error) {
-      console.error("Error fetching employee tasks:", error);
-      throw error;
-    }
-  },
-  createTask: (data) => api.post("/tasks", data),
-  updateTaskStatus: (id, status) => api.put(`/tasks/${id}/status`, { status }),
-  deleteTask: (id) => api.delete(`/tasks/${id}`),
-  startTaskTimer: (taskId) => api.post(`/tasks/${taskId}/timer/start`),
-  stopTaskTimer: (taskId) => api.post(`/tasks/${taskId}/timer/stop`),
-  getTaskTimerHistory: (taskId) => api.get(`/tasks/${taskId}/timer/history`),
-};
-
-// Get today's attendance status
-export const getTodayStatus = async (employeeId) => {
-  try {
-    const res = await api.get(`/attendance/today/${employeeId}`);
-    return res.data;
-  } catch (error) {
-    console.error("Error fetching today's status:", error);
-    throw error;
-  }
-};
-
-// Handling manager-specific logic for fetching attendance data
-const DEFAULT_PAGE = process.env.REACT_APP_DEFAULT_PAGE || 1;
-const DEFAULT_LIMIT = process.env.REACT_APP_DEFAULT_LIMIT || 10;
-
-export const getAttendanceForRole = async (employeeId, role, page = DEFAULT_PAGE, limit = DEFAULT_LIMIT) => {
-  try {
-    if (role === "manager" || role === "admin") {
-      const res = await api.get(`/attendance/?page=${page}&limit=${limit}`);
-      return res.data;
-    } else {
-      return await getTodayStatus(employeeId);
-    }
-  } catch (error) {
-    console.error("Error fetching attendance based on role:", error);
-    throw error;
-  }
-};
 
 export default api;
