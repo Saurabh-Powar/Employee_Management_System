@@ -6,6 +6,6 @@ export default defineConfig({
   base: './', // Ensures relative paths for assets
   root: 'public', // Directory containing index.html
   build: {
-    outDir: 'dist', // Output directory
+    outDir: 'dist' // Output directory
   }
 })
