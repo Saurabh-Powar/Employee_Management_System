@@ -87,8 +87,9 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: 'Something went wrong!' });
 });
 
+const PORT = 5000;
 // Port Configuration
-const BACKEND_URL = process.env.BACKEND_URL || `http://localhost:${PORT}`;
+const BACKEND_URL = process.env.BACKEND_URL || `http://localhost:5000`;
 
 // Create tables and start the server
 createTables()
