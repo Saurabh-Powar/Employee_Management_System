@@ -69,11 +69,12 @@ app.use("/api/salaries", salariesRoutes)
 app.use("/api/notifications", notificationsRoutes)
 app.use("/api/tasks", tasksRoutes)
 
+const PORT = 5000
 // Create tables and start the server
 createTables()
   .then(() => {
       app.listen(PORT, () => {
-    console.log(`Server is running on port https://employee-management-system-d658.onrender.com`);
+    console.log(`Server running on http://localhost:${PORT}`);
   })
   })
   .catch((err) => {
