@@ -1,3 +1,3 @@
-node_modules    /* This directory contains the installed packages */
-package-lock.json /* This file locks the versions of the installed packages */
-.env             /* This file contains environment variables */
+node_modules
+package-lock.json
+.env
