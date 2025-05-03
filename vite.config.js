@@ -7,5 +7,5 @@ export default defineConfig({
   root: 'public', // Directory containing index.html
   build: {
     outDir: 'dist', // Output directory
-  };
+  }
 })
