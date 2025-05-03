@@ -16,7 +16,7 @@ const notificationsRoutes = require("./routes/notificationsRoutes")
 const tasksRoutes = require("./routes/tasksRoutes")
 
 const app = express()
-const PORT = process.env.PORT || "https://employee-management-system-d658.onrender.com"
+const PORT = process.env.PORT || 3000
 
 // ✅ 1. CORS (allow frontend + send credentials)
 app.use(
@@ -31,19 +31,30 @@ app.use(bodyParser.json())
 app.use(bodyParser.urlencoded({ extended: true }))
 
 // ✅ 3. Sessions
-app.use(
-  session({
-    secret: process.env.SESSION_SECRET || "yoursecret",
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-      secure: false, // true in production with https
-      httpOnly: true,
-      maxAge: 24 * 60 * 60 * 1000, // 24 hours
-      sameSite: "lax",
-    },
+const session = require('express-session');
+const pgSession = require('connect-pg-simple')(session); // Import connect-pg-simple
+const { Pool } = require('pg'); // Import pg for PostgreSQL connection
+
+// Set up the PostgreSQL connection pool
+const pool = new Pool({
+  connectionString: process.env.POSTGRES_URL, // Use PostgreSQL connection string from environment variables
+  ssl: {
+    rejectUnauthorized: false // Enable SSL for Render's managed PostgreSQL
+  }
+});
+
+app.use(session({
+  store: new pgSession({
+    pool: pool, // Use the PostgreSQL connection pool
+    tableName: 'session', // Name of the session table (default is "session")
   }),
-)
+  secret: process.env.SESSION_SECRET, // Replace with a secure secret
+  resave: false, // Do not save session if unmodified
+  saveUninitialized: false, // Do not create session until something is stored
+  cookie: {
+    maxAge: 14 * 24 * 60 * 60 * 1000 // Session expiration (14 days in milliseconds)
+  }
+}));
 
 // ✅ 4. Passport
 app.use(passport.initialize())
@@ -62,9 +73,9 @@ app.use("/api/tasks", tasksRoutes)
 // Create tables and start the server
 createTables()
   .then(() => {
-    app.listen(PORT, () => {
-      console.log(`Server running on https://employee-management-system-d658.onrender.com`)
-    })
+      app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
+  })
   })
   .catch((err) => {
     console.error("Could not start the server:", err)
