@@ -45,7 +45,7 @@ const pool = new Pool({
 app.use(session({
   store: new pgSession({
     pool: pool, // Use the PostgreSQL connection pool
-    tableName: 'session', // Name of the session table (default is "session")
+    tableName: 'sessions', // Name of the session table (default is "session")
   }),
   secret: process.env.SESSION_SECRET, // Replace with a secure secret
   resave: false, // Do not save session if unmodified
