@@ -1,8 +1,9 @@
-// Fix the API service to properly handle task-related API calls
+// Updated API service to connect to production backend
 import axios from "axios"
 
+// Use the production backend URL
 const api = axios.create({
-  baseURL: "http://localhost:5000/api",
+  baseURL: "https://employee-management-system-d658.onrender.com/api",
   withCredentials: true,
 })
 
@@ -29,8 +30,8 @@ api.interceptors.response.use(
   (error) => {
     if (error.response && (error.response.status === 401 || error.response.status === 403)) {
       console.error("Authentication error:", error.response.data)
-      // Optionally redirect to login page
-      // window.location.href = '/login';
+      // Redirect to login page on authentication errors
+      window.location.href = "/login"
     }
     return Promise.reject(error)
   },
@@ -44,9 +45,9 @@ export const attendanceAPI = {
 
   markAbsent: (employee_id) => api.post("/attendance/absent", { employeeId: employee_id }),
 
-  getEmployeeAttendanceStatus: (employee_id) => api.get(`/attendance/${employee_id}`), // Used to get the status or records of a specific employee's attendance
+  getEmployeeAttendanceStatus: (employee_id) => api.get(`/attendance/${employee_id}`),
 
-  getAllAttendanceRecords: () => api.get("/attendance"), // Fetches all attendance records for all employees
+  getAllAttendanceRecords: () => api.get("/attendance"),
 }
 
 // Salary-related helpers
@@ -57,7 +58,7 @@ export const salaryAPI = {
   updateSalaryStatus: (id, status) => api.put(`/salaries/${id}`, { status }),
 }
 
-// Add leave API utilities
+// Leave API utilities
 export const leavesAPI = {
   getAllLeaves: () => api.get("/leaves"),
   getEmployeeLeaves: (employeeId) => api.get(`/leaves/${employeeId}`),
@@ -65,26 +66,97 @@ export const leavesAPI = {
   updateLeaveStatus: (id, status) => api.put(`/leaves/${id}`, { status }),
 }
 
-// Task-related helpers
+// Task-related helpers with improved error handling
 export const tasksAPI = {
-  getAllTasks: () => api.get("/tasks"),
-  getEmployeeTasks: (employeeId) => api.get(`/tasks/${employeeId}`),
-  createTask: (data) => api.post("/tasks", data),
-  updateTaskStatus: (id, status) => api.put(`/tasks/${id}/status`, { status }),
-  deleteTask: (id) => api.delete(`/tasks/${id}`),
-  startTaskTimer: (taskId) => api.post(`/tasks/${taskId}/timer/start`),
-  stopTaskTimer: (taskId) => api.post(`/tasks/${taskId}/timer/stop`),
-  getTaskTimerHistory: (taskId) => api.get(`/tasks/${taskId}/timer/history`),
+  getAllTasks: async () => {
+    try {
+      const response = await api.get("/tasks")
+      return response.data
+    } catch (error) {
+      console.error("Error fetching all tasks:", error)
+      throw error
+    }
+  },
+
+  getEmployeeTasks: async (employeeId) => {
+    try {
+      const response = await api.get(`/tasks/${employeeId}`)
+      return response.data
+    } catch (error) {
+      console.error(`Error fetching tasks for employee ${employeeId}:`, error)
+      throw error
+    }
+  },
+
+  createTask: async (data) => {
+    try {
+      const response = await api.post("/tasks", data)
+      return response.data
+    } catch (error) {
+      console.error("Error creating task:", error)
+      throw error
+    }
+  },
+
+  updateTaskStatus: async (id, status) => {
+    try {
+      const response = await api.put(`/tasks/${id}/status`, { status })
+      return response.data
+    } catch (error) {
+      console.error(`Error updating task ${id} status:`, error)
+      throw error
+    }
+  },
+
+  deleteTask: async (id) => {
+    try {
+      const response = await api.delete(`/tasks/${id}`)
+      return response.data
+    } catch (error) {
+      console.error(`Error deleting task ${id}:`, error)
+      throw error
+    }
+  },
+
+  startTaskTimer: async (taskId) => {
+    try {
+      const response = await api.post(`/tasks/${taskId}/timer/start`)
+      return response.data
+    } catch (error) {
+      console.error(`Error starting timer for task ${taskId}:`, error)
+      throw error
+    }
+  },
+
+  stopTaskTimer: async (taskId) => {
+    try {
+      const response = await api.post(`/tasks/${taskId}/timer/stop`)
+      return response.data
+    } catch (error) {
+      console.error(`Error stopping timer for task ${taskId}:`, error)
+      throw error
+    }
+  },
+
+  getTaskTimerHistory: async (taskId) => {
+    try {
+      const response = await api.get(`/tasks/${taskId}/timer/history`)
+      return response.data
+    } catch (error) {
+      console.error(`Error fetching timer history for task ${taskId}:`, error)
+      throw error
+    }
+  },
 }
 
-// Get today's attendance status for an employee or all employees for managers
+// Get today's attendance status with improved error handling
 export const getTodayStatus = async (employeeId) => {
   try {
     const res = await api.get(`/attendance/today/${employeeId}`)
     return res.data
   } catch (error) {
     console.error("Error fetching today's status:", error)
-    throw error // Ensure that error is thrown to be handled at the caller level
+    throw error
   }
 }
 
@@ -93,9 +165,9 @@ export const getAttendanceForRole = async (employeeId, role) => {
   try {
     if (role === "manager" || role === "admin") {
       const res = await api.get(`/attendance/`)
-      return res.data // Returns all employees' attendance data
+      return res.data
     } else {
-      return await getTodayStatus(employeeId) // Returns only the specific employee's attendance data
+      return await getTodayStatus(employeeId)
     }
   } catch (error) {
     console.error("Error fetching attendance based on role:", error)
