@@ -1,7 +1,10 @@
-// Simplify authentication controller to use JWT instead of sessions
 const bcrypt = require("bcrypt")
-const db = require("../db/sql")
 const jwt = require("jsonwebtoken")
+const db = require("../db/sql")
+
+// Get JWT secret from environment or use a default for development
+const JWT_SECRET = process.env.JWT_SECRET || "your_jwt_secret_key_for_development"
+const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "24h"
 
 const authController = {
   // Login user
@@ -24,19 +27,23 @@ const authController = {
 
       // Create JWT token
       const token = jwt.sign(
-        { id: user.id, username: user.username, role: user.role },
-        process.env.JWT_SECRET || "your-secret-key",
-        { expiresIn: "24h" },
+        {
+          id: user.id,
+          username: user.username,
+          role: user.role,
+        },
+        JWT_SECRET,
+        { expiresIn: JWT_EXPIRES_IN },
       )
 
-      // Store user info in the session as well for backward compatibility
-      req.session.user = { id: user.id, username: user.username, role: user.role }
-
+      // Return user info and token
       res.json({
-        id: user.id,
-        username: user.username,
-        role: user.role,
-        token: token,
+        user: {
+          id: user.id,
+          username: user.username,
+          role: user.role,
+        },
+        token,
         message: "Login successful",
       })
     } catch (error) {
@@ -45,59 +52,46 @@ const authController = {
     }
   },
 
-  // Logout user
+  // Logout user - client-side only with JWT
   logout: (req, res) => {
-    // Destroy the session to log out
-    req.session.destroy((err) => {
-      if (err) {
-        console.error("Logout error:", err)
-        return res.status(500).json({ message: "Logout failed due to server error", error: err.message })
-      }
-      res.json({ message: "Logged out successfully" })
-    })
+    // With JWT, logout is handled on the client side by removing the token
+    res.json({ message: "Logged out successfully" })
   },
 
   // Get the logged-in user's information
   getUser: (req, res) => {
-    // Check if the user is authenticated (session-based check)
-    if (req.session.user) {
-      return res.json({ user: req.session.user })
-    } else if (req.user) {
-      // JWT authentication
+    // User info is attached to req by the auth middleware
+    if (req.user) {
       return res.json({ user: req.user })
     } else {
-      return res.status(401).json({ message: "Not authenticated: User session not found" })
+      return res.status(401).json({ message: "Not authenticated" })
     }
   },
 
   // Check if the user is authenticated and return user info
   checkAuth: (req, res) => {
-    // This is an endpoint to verify if the user is authenticated
-    if (req.session.user) {
-      res.json({ message: "Authenticated", user: req.session.user })
-    } else if (req.user) {
-      // JWT authentication
+    // User info is attached to req by the auth middleware
+    if (req.user) {
       res.json({ message: "Authenticated", user: req.user })
     } else {
-      res.status(401).json({ message: "Not authenticated: User session not found" })
+      res.status(401).json({ message: "Not authenticated" })
     }
   },
 
+  // Refresh user data
   refreshUser: (req, res) => {
-    if (req.session.user) {
-      return res.json({ user: req.session.user })
-    } else if (req.user) {
-      // JWT authentication
+    if (req.user) {
       return res.json({ user: req.user })
     } else {
-      return res.status(401).json({ message: "Not authenticated: User session not found" })
+      return res.status(401).json({ message: "Not authenticated" })
     }
   },
 
-  // Validate token endpoint
+  // Validate token
   validateToken: (req, res) => {
-    // If middleware allowed this request, token is valid
+    // If middleware passed, token is valid
     return res.json({ valid: true })
   },
 }
+
 module.exports = authController
