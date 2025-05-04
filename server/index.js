@@ -2,8 +2,6 @@ const express = require("express")
 const cors = require("cors")
 const bodyParser = require("body-parser")
 const createTables = require("./db/migrate")
-const session = require("express-session")
-const passport = require("passport")
 require("dotenv").config()
 
 const authRoutes = require("./routes/authRoutes")
@@ -17,25 +15,19 @@ const tasksRoutes = require("./routes/tasksRoutes")
 
 const app = express()
 
-// Define allowed origins - use * for development, update for production
+// Define allowed origins
 const allowedOrigins = [
-  "*", // Allow all origins in development
-  "https://employee-management-system-1-1wvc.onrender.com",
   "https://employee-management-system-1-wj64.onrender.com",
   "http://localhost:3000",
   "http://localhost:5173",
 ]
 
-// CORS Configuration - Updated for production URLs with better error handling
+// CORS Configuration
 app.use(
   cors({
     origin: (origin, callback) => {
       // Allow requests with no origin (like mobile apps, curl requests)
       if (!origin) return callback(null, true)
-
-      if (allowedOrigins.includes("*")) {
-        return callback(null, true)
-      }
 
       if (allowedOrigins.indexOf(origin) === -1) {
         const msg = `The CORS policy for this site does not allow access from the specified Origin: ${origin}`
@@ -56,31 +48,6 @@ app.options("*", cors())
 app.use(bodyParser.json())
 app.use(bodyParser.urlencoded({ extended: true }))
 
-// Sessions - simplified to use memory store for development
-// In production, use a proper session store
-if (!process.env.SESSION_SECRET) {
-  console.warn(
-    "SESSION_SECRET is not defined in environment variables. Using a default secret (not recommended for production).",
-  )
-}
-
-app.use(
-  session({
-    secret: process.env.SESSION_SECRET || "default_secret_for_development",
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-      maxAge: 14 * 24 * 60 * 60 * 1000,
-      secure: process.env.NODE_ENV === "production", // Secure in production
-      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", // Allow cross-site cookies in production
-    },
-  }),
-)
-
-// Passport
-app.use(passport.initialize())
-app.use(passport.session())
-
 // Root route for health check
 app.get("/", (req, res) => {
   res.json({
@@ -93,7 +60,7 @@ app.get("/", (req, res) => {
   })
 })
 
-// Routes - prefix all with /api
+// Routes
 app.use("/api/auth", authRoutes)
 app.use("/api/employees", employeesRoutes)
 app.use("/api/attendance", attendanceRoutes)
