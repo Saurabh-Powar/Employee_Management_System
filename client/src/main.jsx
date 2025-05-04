@@ -1,18 +1,21 @@
 import React from "react"
 import ReactDOM from "react-dom/client"
-import App from "./App"
-import { AuthProvider } from "./context/AuthContext" // Ensure AuthContext is wrapped properly
+import App from "./App.jsx"
 import "./index.css"
+import { AuthProvider } from "./context/AuthContext.jsx"
+import ErrorBoundary from "./components/ErrorBoundary.jsx"
 
-// Create root for React 18+ usage
-const root = ReactDOM.createRoot(document.getElementById("root"))
+// Add global error handler for unhandled promise rejections
+window.addEventListener("unhandledrejection", (event) => {
+  console.error("Unhandled promise rejection:", event.reason)
+})
 
-root.render(
+ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
-    <AuthProvider>
-      {" "}
-      {/* Wrapping the App with AuthProvider for user authentication management */}
-      <App />
-    </AuthProvider>
+    <ErrorBoundary showDetails={process.env.NODE_ENV !== "production"}>
+      <AuthProvider>
+        <App />
+      </AuthProvider>
+    </ErrorBoundary>
   </React.StrictMode>,
 )
