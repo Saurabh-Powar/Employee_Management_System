@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { useAuth } from "../context/AuthContext"
 import api from "../services/api"
-import "./AttendancePopupS.css"
+import "./AttendancePopups.css"
 
 function AttendancePopup({ onClose, status, setStatus, setAccessBlocked }) {
   const { user } = useAuth()
