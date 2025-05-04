@@ -18,7 +18,8 @@ const authService = {
       await api.post("/auth/logout")
     } catch (error) {
       console.error("Logout failed:", error?.response?.data || error.message || error)
-      throw error
+      // Even if the server logout fails, we still want to clear local state
+      // so we don't throw the error here
     }
   },
 
@@ -45,6 +46,39 @@ const authService = {
     } catch (error) {
       console.error("Refreshing user data failed:", error?.response?.data || error.message || error)
       throw error
+    }
+  },
+
+  // Register a new user (if needed)
+  async register(userData) {
+    try {
+      const response = await api.post("/auth/register", userData)
+      return response.data
+    } catch (error) {
+      console.error("Registration failed:", error?.response?.data || error.message || error)
+      throw error
+    }
+  },
+
+  // Update user profile
+  async updateProfile(userId, profileData) {
+    try {
+      const response = await api.put(`/auth/profile/${userId}`, profileData)
+      return response.data
+    } catch (error) {
+      console.error("Profile update failed:", error?.response?.data || error.message || error)
+      throw error
+    }
+  },
+
+  // Check if token is valid
+  async validateToken() {
+    try {
+      const response = await api.get("/auth/validate-token")
+      return response.data.valid
+    } catch (error) {
+      console.error("Token validation failed:", error?.response?.data || error.message || error)
+      return false
     }
   },
 }
