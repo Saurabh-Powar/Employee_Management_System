@@ -7,7 +7,6 @@ import AdminPage from "./pages/AdminPage"
 import ManagerPage from "./pages/ManagerPage"
 import EmployeePage from "./pages/EmployeePage"
 import NetworkStatusIndicator from "./components/NetworkStatusIndicator"
-import ErrorBoundary from "./components/ErrorBoundary"
 import "./AppS.css"
 
 function App() {
@@ -23,30 +22,28 @@ function App() {
   }
 
   return (
-    <ErrorBoundary showDetails={process.env.NODE_ENV !== "production"}>
-      <Router>
-        <NetworkStatusIndicator />
-        {error && <div className="global-error-message">{error}</div>}
-        <Routes>
-          <Route path="/login" element={user ? <Navigate to="/" /> : <Login />} />
-          <Route
-            path="/"
-            element={
-              !user ? (
-                <Navigate to="/login" />
-              ) : user.role === "admin" ? (
-                <AdminPage />
-              ) : user.role === "manager" ? (
-                <ManagerPage />
-              ) : (
-                <EmployeePage />
-              )
-            }
-          />
-          <Route path="*" element={<Navigate to="/" />} />
-        </Routes>
-      </Router>
-    </ErrorBoundary>
+    <Router>
+      <NetworkStatusIndicator />
+      {error && <div className="global-error-message">{error}</div>}
+      <Routes>
+        <Route path="/login" element={user ? <Navigate to="/" /> : <Login />} />
+        <Route
+          path="/"
+          element={
+            !user ? (
+              <Navigate to="/login" />
+            ) : user.role === "admin" ? (
+              <AdminPage />
+            ) : user.role === "manager" ? (
+              <ManagerPage />
+            ) : (
+              <EmployeePage />
+            )
+          }
+        />
+        <Route path="*" element={<Navigate to="/" />} />
+      </Routes>
+    </Router>
   )
 }
 
