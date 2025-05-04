@@ -1,68 +1,98 @@
-/* NavbarS.css */
 .navbar {
-  background-color: #333;
-  color: #fff;
-  padding: 10px;
-  position: relative;
+  background-color: var(--primary);
+  color: white;
+  padding: 0.5rem 1rem;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .navbar-container {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: space-between;
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
 .menu-toggle {
   display: none;
+  background: transparent;
+  border: none;
+  color: white;
+  font-size: 1.5rem;
   cursor: pointer;
-  font-size: 30px;
+  padding: 0.5rem;
 }
 
 .menu-links {
   display: flex;
-  gap: 20px;
+  align-items: center;
+  gap: 1.5rem;
 }
 
 .menu-links a {
+  color: white;
   text-decoration: none;
-  color: #fff;
+  font-weight: 500;
+  padding: 0.5rem;
+  transition: color 0.3s;
 }
 
-.menu-links button {
-  background-color: #f44336;
+.menu-links a:hover {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.logout-btn {
+  background-color: rgba(255, 255, 255, 0.2);
   color: white;
   border: none;
-  padding: 10px;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
   cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.3s;
 }
 
-.menu-links.active {
-  display: block; /* Show menu when active */
+.logout-btn:hover {
+  background-color: rgba(255, 255, 255, 0.3);
 }
 
+/* Responsive styles */
 @media (max-width: 768px) {
   .menu-toggle {
     display: block;
   }
 
   .menu-links {
-    display: none; /* Hide links by default */
-    position: absolute;
-    top: 50px;
-    left: 0;
-    width: 100%;
-    background-color: #333;
+    position: fixed;
+    top: 0;
+    left: -100%;
+    width: 80%;
+    max-width: 300px;
+    height: 100vh;
+    background-color: var(--primary-dark);
     flex-direction: column;
-    align-items: center;
-    gap: 15px;
-    padding: 20px;
+    align-items: flex-start;
+    padding: 2rem 1rem;
+    transition: left 0.3s ease-in-out;
+    overflow-y: auto;
+    gap: 1rem;
   }
 
   .menu-links.active {
-    display: flex; /* Show menu when active */
+    left: 0;
   }
 
   .menu-links a {
-    font-size: 18px;
+    width: 100%;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .logout-btn {
+    margin-top: 1rem;
+    width: 100%;
   }
 }
