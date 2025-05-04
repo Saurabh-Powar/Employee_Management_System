@@ -14,12 +14,12 @@ const Login = () => {
   const navigate = useNavigate()
   const { login, error: authError, clearError } = useAuth()
 
-  // Check server connection on component mount
+  // Update the server connection check to use relative path
   useEffect(() => {
     const checkConnection = async () => {
       try {
         // Simple fetch to the backend to check if server is reachable
-        const response = await fetch("https://employee-management-system-gv8r.onrender.com", {
+        const response = await fetch("/api", {
           method: "HEAD",
           mode: "cors",
         })
