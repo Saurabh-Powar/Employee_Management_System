@@ -5,6 +5,12 @@ const authService = {
   async login(username, password) {
     try {
       const response = await api.post("/auth/login", { username, password })
+
+      // Store the JWT token in localStorage
+      if (response.data.token) {
+        localStorage.setItem("authToken", response.data.token)
+      }
+
       return response.data
     } catch (error) {
       console.error("Login failed:", error?.response?.data || error.message || error)
@@ -15,17 +21,27 @@ const authService = {
   // Logout service
   async logout() {
     try {
+      // With JWT, we just need to remove the token from localStorage
+      localStorage.removeItem("authToken")
+
+      // Optional: notify the server about logout
       await api.post("/auth/logout")
     } catch (error) {
       console.error("Logout failed:", error?.response?.data || error.message || error)
       // Even if the server logout fails, we still want to clear local state
-      // so we don't throw the error here
+      localStorage.removeItem("authToken")
     }
   },
 
   // Fetch logged-in user details with retry logic
   async getUser(retryCount = 0) {
     try {
+      // Check if we have a token first
+      const token = localStorage.getItem("authToken")
+      if (!token) {
+        return null
+      }
+
       const response = await api.get("/auth/user")
       return response.data
     } catch (error) {
@@ -39,6 +55,7 @@ const authService = {
 
       if (error.response && error.response.status === 401) {
         console.log("User not authenticated")
+        localStorage.removeItem("authToken")
         return null
       }
 
@@ -47,7 +64,7 @@ const authService = {
     }
   },
 
-  // Refresh user session data (role-aware)
+  // Refresh user session data
   async refreshUser() {
     try {
       const response = await api.get("/auth/refresh-user")
@@ -83,6 +100,11 @@ const authService = {
   // Check if token is valid
   async validateToken() {
     try {
+      const token = localStorage.getItem("authToken")
+      if (!token) {
+        return false
+      }
+
       const response = await api.get("/auth/validate-token")
       return response.data.valid
     } catch (error) {
