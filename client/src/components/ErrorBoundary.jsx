@@ -24,17 +24,6 @@ class ErrorBoundary extends Component {
       error: error,
       errorInfo: errorInfo,
     })
-
-    // You could add error reporting service here
-    // Example: reportErrorToService(error, errorInfo);
-  }
-
-  resetError = () => {
-    this.setState({
-      hasError: false,
-      error: null,
-      errorInfo: null,
-    })
   }
 
   render() {
@@ -47,14 +36,9 @@ class ErrorBoundary extends Component {
             We're sorry for the inconvenience. Please try refreshing the page or contact support if the problem
             persists.
           </p>
-          <div className="error-actions">
-            <button onClick={() => window.location.reload()} className="error-reload-btn">
-              Refresh Page
-            </button>
-            <button onClick={this.resetError} className="error-retry-btn">
-              Try Again
-            </button>
-          </div>
+          <button onClick={() => window.location.reload()} className="error-reload-btn">
+            Refresh Page
+          </button>
           {this.props.showDetails && (
             <details style={{ whiteSpace: "pre-wrap", marginTop: "20px" }}>
               <summary>Error Details</summary>
