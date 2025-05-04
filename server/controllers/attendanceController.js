@@ -161,13 +161,13 @@ const attendanceController = {
     if (sessionUser.role === "employee") {
       // Get the employee record for the current user
       const employeeResult = await db.query("SELECT id FROM employees WHERE user_id = $1", [sessionUser.id])
-      
+
       if (employeeResult.rows.length === 0) {
         return res.status(404).json({ message: "Employee record not found" })
       }
-      
+
       const userEmployeeId = employeeResult.rows[0].id
-      
+
       if (Number(employeeId) !== userEmployeeId) {
         return res.status(403).json({ message: "You can only check in yourself" })
       }
@@ -218,13 +218,13 @@ const attendanceController = {
     if (sessionUser.role === "employee") {
       // Get the employee record for the current user
       const employeeResult = await db.query("SELECT id FROM employees WHERE user_id = $1", [sessionUser.id])
-      
+
       if (employeeResult.rows.length === 0) {
         return res.status(404).json({ message: "Employee record not found" })
       }
-      
+
       const userEmployeeId = employeeResult.rows[0].id
-      
+
       if (Number(employeeId) !== userEmployeeId) {
         return res.status(403).json({ message: "You can only check out yourself" })
       }
@@ -291,13 +291,13 @@ const attendanceController = {
     if (sessionUser.role === "employee") {
       // Get the employee record for the current user
       const employeeResult = await db.query("SELECT id FROM employees WHERE user_id = $1", [sessionUser.id])
-      
+
       if (employeeResult.rows.length === 0) {
         return res.status(404).json({ message: "Employee record not found" })
       }
-      
+
       const userEmployeeId = employeeResult.rows[0].id
-      
+
       if (Number(employeeId) !== userEmployeeId) {
         return res.status(403).json({ message: "You can only mark yourself absent" })
       }
