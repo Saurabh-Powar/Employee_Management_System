@@ -47,6 +47,11 @@ export function AuthProvider({ children }) {
         // Not authenticated - this is normal, don't show error
         setUser(null)
         clearTokenRefresh()
+      } else if (error.response && error.response.status === 404) {
+        // API endpoint not found - likely a configuration issue
+        console.error("API endpoint not found. Check server configuration.")
+        setUser(null)
+        clearTokenRefresh()
       } else {
         setError("An error occurred while fetching user data. Please try again.")
       }
