@@ -1,19 +1,17 @@
 import axios from "axios"
 
-// Update the BACKEND_URL to use a relative path instead of hardcoded URL
-// This will make the app work regardless of where it's deployed
-const BACKEND_URL = "/api"
+// Define the base URL for API requests
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://employee-management-system-gv8r.onrender.com/api"
 
+// Create an axios instance with default config
 const api = axios.create({
-  baseURL: BACKEND_URL,
-  withCredentials: true,
-  timeout: 15000, // Increased timeout for potentially slow responses on render.com
+  baseURL: API_BASE_URL,
   headers: {
     "Content-Type": "application/json",
   },
 })
 
-// Add a request interceptor to include auth token if available
+// Add a request interceptor to include the auth token in all requests
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("authToken")
@@ -22,24 +20,33 @@ api.interceptors.request.use(
     }
     return config
   },
-  (error) => Promise.reject(error),
+  (error) => {
+    return Promise.reject(error)
+  },
 )
 
-// Add a response interceptor to handle common errors
+// Add a response interceptor to handle token expiration
 api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    // Handle network errors gracefully
-    if (error.code === "ERR_NETWORK") {
-      console.error("Network error - server may be down or CORS issue:", error.message)
-    }
+  (response) => {
+    return response
+  },
+  async (error) => {
+    const originalRequest = error.config
 
-    // Handle authentication errors
-    if (error.response && (error.response.status === 401 || error.response.status === 403)) {
-      console.error("Authentication error:", error.response?.data)
-      // Only redirect if not already on login page to prevent redirect loops
-      if (!window.location.pathname.includes("/login")) {
+    // If the error is due to an expired token and we haven't tried to refresh yet
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true
+
+      try {
+        // Try to refresh the token or redirect to login
+        localStorage.removeItem("authToken")
         window.location.href = "/login"
+        return Promise.reject(error)
+      } catch (refreshError) {
+        // If refresh fails, redirect to login
+        localStorage.removeItem("authToken")
+        window.location.href = "/login"
+        return Promise.reject(refreshError)
       }
     }
 
