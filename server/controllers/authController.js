@@ -1,97 +1,98 @@
-const bcrypt = require("bcrypt")
 const jwt = require("jsonwebtoken")
-const db = require("../db/sql")
 
 // Get JWT secret from environment or use a default for development
 const JWT_SECRET = process.env.JWT_SECRET || "your_jwt_secret_key_for_development"
-const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "24h"
 
-const authController = {
-  // Login user
-  login: async (req, res) => {
-    const { username, password } = req.body
-    try {
-      // Query the database to get the user details
-      const userResult = await db.query("SELECT * FROM users WHERE username = $1", [username])
-      const user = userResult.rows[0]
+// Verify JWT token from Authorization header
+const verifyToken = (req, res, next) => {
+  // Get the token from the Authorization header
+  const authHeader = req.headers.authorization
+  const token = authHeader && authHeader.split(" ")[1] // Bearer TOKEN format
 
-      if (!user) {
-        return res.status(401).json({ message: "Invalid credentials: User not found" })
-      }
+  if (!token) {
+    return res.status(401).json({ message: "No token provided" })
+  }
 
-      // Compare password with hashed password in the database
-      const passwordMatch = await bcrypt.compare(password, user.password)
-      if (!passwordMatch) {
-        return res.status(401).json({ message: "Invalid credentials: Incorrect password" })
-      }
+  try {
+    // Verify the token
+    const decoded = jwt.verify(token, JWT_SECRET)
 
-      // Create JWT token
-      const token = jwt.sign(
-        {
-          id: user.id,
-          username: user.username,
-          role: user.role,
-        },
-        JWT_SECRET,
-        { expiresIn: JWT_EXPIRES_IN },
-      )
-
-      // Return user info and token
-      res.json({
-        user: {
-          id: user.id,
-          username: user.username,
-          role: user.role,
-        },
-        token,
-        message: "Login successful",
-      })
-    } catch (error) {
-      console.error("Login error:", error)
-      res.status(500).json({ message: "Login failed due to server error", error: error.message })
+    // Attach user info to request
+    req.user = {
+      id: decoded.id,
+      username: decoded.username,
+      role: decoded.role,
     }
-  },
 
-  // Logout user - client-side only with JWT
-  logout: (req, res) => {
-    // With JWT, logout is handled on the client side by removing the token
-    res.json({ message: "Logged out successfully" })
-  },
-
-  // Get the logged-in user's information
-  getUser: (req, res) => {
-    // User info is attached to req by the auth middleware
-    if (req.user) {
-      return res.json({ user: req.user })
-    } else {
-      return res.status(401).json({ message: "Not authenticated" })
-    }
-  },
-
-  // Check if the user is authenticated and return user info
-  checkAuth: (req, res) => {
-    // User info is attached to req by the auth middleware
-    if (req.user) {
-      res.json({ message: "Authenticated", user: req.user })
-    } else {
-      res.status(401).json({ message: "Not authenticated" })
-    }
-  },
-
-  // Refresh user data
-  refreshUser: (req, res) => {
-    if (req.user) {
-      return res.json({ user: req.user })
-    } else {
-      return res.status(401).json({ message: "Not authenticated" })
-    }
-  },
-
-  // Validate token
-  validateToken: (req, res) => {
-    // If middleware passed, token is valid
-    return res.json({ valid: true })
-  },
+    next()
+  } catch (error) {
+    console.error("Token verification failed:", error)
+    return res.status(401).json({ message: "Invalid or expired token" })
+  }
 }
 
-module.exports = authController
+const isAuthenticated = (req, res, next) => {
+  verifyToken(req, res, next)
+}
+
+const isManager = (req, res, next) => {
+  verifyToken(req, res, (err) => {
+    if (err) return next(err)
+
+    if (req.user && req.user.role === "manager") {
+      return next()
+    }
+
+    console.warn("Unauthorized manager access attempt by:", req.user?.role || "unknown")
+    return res.status(403).json({ message: "Access denied: Manager role required" })
+  })
+}
+
+const isAdmin = (req, res, next) => {
+  verifyToken(req, res, (err) => {
+    if (err) return next(err)
+
+    if (req.user && req.user.role === "admin") {
+      return next()
+    }
+
+    console.warn("Unauthorized admin access attempt by:", req.user?.role || "unknown")
+    return res.status(403).json({ message: "Access denied: Admin role required" })
+  })
+}
+
+const isEmployee = (req, res, next) => {
+  verifyToken(req, res, (err) => {
+    if (err) return next(err)
+
+    if (req.user && req.user.role === "employee") {
+      return next()
+    }
+
+    console.warn("Unauthorized employee access attempt by:", req.user?.role || "unknown")
+    return res.status(403).json({ message: "Access denied: Employee role required" })
+  })
+}
+
+const isSelfOrManagerOrAdmin = (req, res, next) => {
+  verifyToken(req, res, (err) => {
+    if (err) return next(err)
+
+    const requestedId = Number.parseInt(req.params.employeeId || req.params.id, 10)
+
+    if (req.user.role === "admin" || req.user.role === "manager" || req.user.id === requestedId) {
+      return next()
+    }
+
+    console.warn(`Unauthorized access attempt: ${req.user.role} trying to access ID ${requestedId}`)
+    return res.status(403).json({ message: "Access denied: You can only access your own data" })
+  })
+}
+
+module.exports = {
+  isAuthenticated,
+  isManager,
+  isAdmin,
+  isEmployee,
+  isSelfOrManagerOrAdmin,
+}
