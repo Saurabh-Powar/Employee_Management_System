@@ -3,7 +3,7 @@ import axios from "axios"
 
 // Create API instance with proper configuration
 const api = axios.create({
-  baseURL: "https://employee-management-system-d658.onrender.com/api",
+  baseURL: "https://employee-management-system-gv8r.onrender.com",
   withCredentials: true,
   timeout: 10000, // 10 second timeout
   headers: {
