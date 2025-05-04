@@ -3,7 +3,7 @@
 
 import { io } from "socket.io-client";
 
-const socket = io("https://employee-management-system-d658.onrender.com", {
+const socket = io("https://employee-management-system-gv8r.onrender.com", {
   withCredentials: true,
   autoConnect: false
 });
