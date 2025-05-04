@@ -1,21 +1,60 @@
 const express = require("express")
-const router = express.Router()
-const authController = require("../controllers/authController")
-const auth = require("../middleware/authMiddleware")
+const session = require("express-session")
 
-// Login route
-router.post("/login", authController.login)
+// Session-based authentication middleware
+const isAuthenticated = (req, res, next) => {
+  if (req.session && req.session.user) {
+    // User is authenticated
+    req.user = req.session.user
+    return next()
+  }
+  // User is not authenticated
+  return res.status(401).json({ message: "Authentication required" })
+}
 
-// Logout route (client-side only with JWT)
-router.post("/logout", authController.logout)
+const isManager = (req, res, next) => {
+  if (req.session && req.session.user && req.session.user.role === "manager") {
+    return next()
+  }
+  console.warn("Unauthorized manager access attempt by:", req.session?.user?.role || "unknown")
+  return res.status(403).json({ message: "Access denied: Manager role required" })
+}
 
-// Get authenticated user's data
-router.get("/user", auth.isAuthenticated, authController.getUser)
+const isAdmin = (req, res, next) => {
+  if (req.session && req.session.user && req.session.user.role === "admin") {
+    return next()
+  }
+  console.warn("Unauthorized admin access attempt by:", req.session?.user?.role || "unknown")
+  return res.status(403).json({ message: "Access denied: Admin role required" })
+}
 
-// Refresh user data
-router.get("/refresh-user", auth.isAuthenticated, authController.refreshUser)
+const isEmployee = (req, res, next) => {
+  if (req.session && req.session.user && req.session.user.role === "employee") {
+    return next()
+  }
+  console.warn("Unauthorized employee access attempt by:", req.session?.user?.role || "unknown")
+  return res.status(403).json({ message: "Access denied: Employee role required" })
+}
 
-// Validate token
-router.get("/validate-token", auth.isAuthenticated, authController.validateToken)
+const isSelfOrManagerOrAdmin = (req, res, next) => {
+  if (!req.session || !req.session.user) {
+    return res.status(401).json({ message: "Authentication required" })
+  }
 
-module.exports = router
+  const requestedId = Number.parseInt(req.params.employeeId || req.params.id, 10)
+
+  if (req.session.user.role === "admin" || req.session.user.role === "manager" || req.session.user.id === requestedId) {
+    return next()
+  }
+
+  console.warn(`Unauthorized access attempt: ${req.session.user.role} trying to access ID ${requestedId}`)
+  return res.status(403).json({ message: "Access denied: You can only access your own data" })
+}
+
+module.exports = {
+  isAuthenticated,
+  isManager,
+  isAdmin,
+  isEmployee,
+  isSelfOrManagerOrAdmin,
+}
