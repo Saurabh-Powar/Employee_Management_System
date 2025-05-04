@@ -17,8 +17,9 @@ const tasksRoutes = require("./routes/tasksRoutes")
 
 const app = express()
 
-// Define allowed origins
+// Define allowed origins - use * for development, update for production
 const allowedOrigins = [
+  "*", // Allow all origins in development
   "https://employee-management-system-1-1wvc.onrender.com",
   "https://employee-management-system-1-wj64.onrender.com",
   "http://localhost:3000",
@@ -31,6 +32,10 @@ app.use(
     origin: (origin, callback) => {
       // Allow requests with no origin (like mobile apps, curl requests)
       if (!origin) return callback(null, true)
+
+      if (allowedOrigins.includes("*")) {
+        return callback(null, true)
+      }
 
       if (allowedOrigins.indexOf(origin) === -1) {
         const msg = `The CORS policy for this site does not allow access from the specified Origin: ${origin}`
@@ -51,30 +56,16 @@ app.options("*", cors())
 app.use(bodyParser.json())
 app.use(bodyParser.urlencoded({ extended: true }))
 
-// Sessions
+// Sessions - simplified to use memory store for development
+// In production, use a proper session store
 if (!process.env.SESSION_SECRET) {
   console.warn(
     "SESSION_SECRET is not defined in environment variables. Using a default secret (not recommended for production).",
   )
 }
 
-const pgSession = require("connect-pg-simple")(session)
-const { Pool } = require("pg")
-
-const pool = new Pool({
-  connectionString: process.env.POSTGRES_URL,
-  ssl: {
-    rejectUnauthorized: false, // Use proper SSL certificates in production
-  },
-})
-
 app.use(
   session({
-    store: new pgSession({
-      pool: pool,
-      tableName: "sessions",
-      createTableIfMissing: true,
-    }),
     secret: process.env.SESSION_SECRET || "default_secret_for_development",
     resave: false,
     saveUninitialized: false,
@@ -102,7 +93,7 @@ app.get("/", (req, res) => {
   })
 })
 
-// Routes
+// Routes - prefix all with /api
 app.use("/api/auth", authRoutes)
 app.use("/api/employees", employeesRoutes)
 app.use("/api/attendance", attendanceRoutes)
