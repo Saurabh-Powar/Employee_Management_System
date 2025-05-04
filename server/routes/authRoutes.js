@@ -17,4 +17,7 @@ router.get("/user", auth.isAuthenticated, authController.getUser)
 // Optional: route for refreshing user session details explicitly (used in frontend refreshUser call)
 router.get("/refresh-user", auth.isAuthenticated, authController.refreshUser)
 
+// Add token validation endpoint
+router.get("/validate-token", auth.isAuthenticated, authController.validateToken)
+
 module.exports = router
