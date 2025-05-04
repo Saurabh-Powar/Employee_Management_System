@@ -8,9 +8,6 @@ export default defineConfig({
   build: {
     outDir: "dist",
     sourcemap: true,
-    rollupOptions: {
-      external: ['lucide-react'],
-    },
   },
   server: {
     port: 5173,
