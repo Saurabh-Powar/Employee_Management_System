@@ -19,7 +19,7 @@ const app = express()
 
 // CORS Configuration - Updated for production URLs
 app.use((req, res, next) => {
-  res.setHeader("Access-Control-Allow-Origin", "https://employee-management-system-1-1wvc.onrender.com")
+  res.setHeader("Access-Control-Allow-Origin", "https://employee-management-system-1-wj64.onrender.com")
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization")
   res.setHeader("Access-Control-Allow-Credentials", "true")
