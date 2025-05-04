@@ -17,7 +17,7 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
-  const [tokenRefreshTimer, setTokenRefreshTimer] = useState(null)
+  const [sessionCheckTimer, setSessionCheckTimer] = useState(null)
 
   // Clear error function
   const clearError = () => setError(null)
@@ -29,13 +29,13 @@ export function AuthProvider({ children }) {
       const userData = await authService.getUser()
       if (userData && userData.user && userData.user.id && userData.user.role) {
         setUser(userData.user)
-        setupTokenRefresh()
+        setupSessionCheck()
       } else if (userData && userData.id && userData.role) {
         setUser(userData)
-        setupTokenRefresh()
+        setupSessionCheck()
       } else {
         setUser(null)
-        clearTokenRefresh()
+        clearSessionCheck()
       }
     } catch (error) {
       console.error("Failed to fetch user:", error)
@@ -46,7 +46,7 @@ export function AuthProvider({ children }) {
       } else if (error.response && error.response.status === 401) {
         // Not authenticated - this is normal, don't show error
         setUser(null)
-        clearTokenRefresh()
+        clearSessionCheck()
       } else {
         setError("An error occurred while fetching user data. Please try again.")
       }
@@ -57,53 +57,47 @@ export function AuthProvider({ children }) {
     }
   }
 
-  // Setup token refresh timer (every 23 hours to prevent 24-hour token expiration)
-  const setupTokenRefresh = () => {
-    clearTokenRefresh() // Clear any existing timer
+  // Setup session check timer (every 5 minutes)
+  const setupSessionCheck = () => {
+    clearSessionCheck() // Clear any existing timer
     const timer = setInterval(
       async () => {
         try {
-          // Validate and refresh token if needed
-          const isValid = await authService.validateToken()
-          if (!isValid) {
-            // If token is invalid, logout
+          // Check if session is still valid
+          const userData = await authService.checkAuth()
+          if (!userData) {
+            // If session is invalid, logout
             logout()
           }
         } catch (error) {
-          console.error("Token refresh failed:", error)
-          // If refresh fails, we might need to logout the user
+          console.error("Session check failed:", error)
+          // If check fails, we might need to logout the user
           if (error.response && error.response.status === 401) {
             logout()
           }
         }
       },
-      23 * 60 * 60 * 1000, // 23 hours
+      5 * 60 * 1000, // 5 minutes
     )
 
-    setTokenRefreshTimer(timer)
+    setSessionCheckTimer(timer)
   }
 
-  // Clear token refresh timer
-  const clearTokenRefresh = () => {
-    if (tokenRefreshTimer) {
-      clearInterval(tokenRefreshTimer)
-      setTokenRefreshTimer(null)
+  // Clear session check timer
+  const clearSessionCheck = () => {
+    if (sessionCheckTimer) {
+      clearInterval(sessionCheckTimer)
+      setSessionCheckTimer(null)
     }
   }
 
   // Initial user fetch on app load
   useEffect(() => {
-    // Check if we have a token in localStorage
-    const token = localStorage.getItem("authToken")
-    if (token) {
-      fetchUser()
-    } else {
-      setLoading(false)
-    }
+    fetchUser()
 
     // Cleanup on unmount
     return () => {
-      clearTokenRefresh()
+      clearSessionCheck()
     }
   }, [])
 
@@ -117,7 +111,7 @@ export function AuthProvider({ children }) {
       const loggedInUser = data.user || data
       if (loggedInUser && loggedInUser.id && loggedInUser.role) {
         setUser(loggedInUser)
-        setupTokenRefresh()
+        setupSessionCheck()
       } else {
         setUser(null)
         setError("Invalid user data received from server")
@@ -149,13 +143,14 @@ export function AuthProvider({ children }) {
       setLoading(true)
       setError(null)
       await authService.logout()
-      clearTokenRefresh()
+      clearSessionCheck()
     } catch (error) {
       console.error("Logout failed:", error)
       // Even if server logout fails, we still want to clear local state
     } finally {
       setUser(null)
       setLoading(false)
+      window.location.href = "/login"
     }
   }
 
@@ -187,4 +182,3 @@ export function useAuth() {
 }
 
 export { AuthContext }
-
