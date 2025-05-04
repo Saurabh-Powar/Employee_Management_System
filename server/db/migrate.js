@@ -4,16 +4,6 @@ const bcrypt = require("bcrypt")
 const createTables = async () => {
   try {
     await query(`
-
-      CREATE TABLE IF NOT EXISTS "sessions" (
-  "sid" VARCHAR PRIMARY KEY NOT NULL COLLATE "default",
-  "sess" JSON NOT NULL,
-  "expire" TIMESTAMP(6) NOT NULL
-)
-WITH (OIDS=FALSE);
-
-CREATE INDEX IF NOT EXISTS "IDX_session_expire" ON "sessions" ("expire");
-
       CREATE TABLE IF NOT EXISTS users (
         id SERIAL PRIMARY KEY,
         username VARCHAR(50) UNIQUE NOT NULL,
