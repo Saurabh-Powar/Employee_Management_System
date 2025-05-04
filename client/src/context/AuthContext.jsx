@@ -43,6 +43,12 @@ export function AuthProvider({ children }) {
   const login = async (username, password) => {
     try {
       const data = await authService.login(username, password)
+
+      // Store token if provided
+      if (data.token) {
+        localStorage.setItem("authToken", data.token)
+      }
+
       const loggedInUser = data.user || data
       if (loggedInUser && loggedInUser.id && loggedInUser.role) {
         setUser(loggedInUser)
@@ -60,6 +66,8 @@ export function AuthProvider({ children }) {
   const logout = async () => {
     try {
       await authService.logout()
+      // Clear token on logout
+      localStorage.removeItem("authToken")
     } catch (error) {
       console.error("Logout failed:", error)
     } finally {
