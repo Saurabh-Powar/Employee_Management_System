@@ -23,16 +23,25 @@ const authService = {
     }
   },
 
-  // Fetch logged-in user details
-  async getUser() {
+  // Fetch logged-in user details with retry logic
+  async getUser(retryCount = 0) {
     try {
       const response = await api.get("/auth/user")
       return response.data
     } catch (error) {
+      // If it's a network error and we haven't retried too many times, try again
+      if (error.code === "ERR_NETWORK" && retryCount < 2) {
+        console.log(`Network error, retrying (${retryCount + 1}/2)...`)
+        // Wait a bit before retrying
+        await new Promise((resolve) => setTimeout(resolve, 1000))
+        return this.getUser(retryCount + 1)
+      }
+
       if (error.response && error.response.status === 401) {
         console.log("User not authenticated")
         return null
       }
+
       console.error("Fetching user failed:", error?.response?.data || error.message || error)
       throw error
     }
