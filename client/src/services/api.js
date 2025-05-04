@@ -3,7 +3,7 @@ import axios from "axios"
 
 // Use the production backend URL
 const api = axios.create({
-  baseURL: "https://employee-management-system-d658.onrender.com/api",
+  baseURL: "https://employee-management-system-gv8r.onrender.com/api",
   withCredentials: true,
 })
 
