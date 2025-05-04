@@ -1,0 +1,47 @@
+.network-status-indicator {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  padding: 10px 15px;
+  border-radius: 4px;
+  z-index: 1000;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateY(-20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.network-status-indicator.online {
+  background-color: #e7f7ed;
+  color: #2e7d32;
+  border-left: 4px solid #2e7d32;
+}
+
+.network-status-indicator.offline {
+  background-color: #fdecea;
+  color: #d32f2f;
+  border-left: 4px solid #d32f2f;
+}
+
+.status-icon {
+  margin-right: 8px;
+  font-weight: bold;
+}
+
+.online-message,
+.offline-message {
+  display: flex;
+  align-items: center;
+}
