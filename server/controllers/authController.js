@@ -1,5 +1,7 @@
+// Simplify authentication controller to use JWT instead of sessions
 const bcrypt = require("bcrypt")
 const db = require("../db/sql")
+const jwt = require("jsonwebtoken")
 
 const authController = {
   // Login user
@@ -20,13 +22,21 @@ const authController = {
         return res.status(401).json({ message: "Invalid credentials: Incorrect password" })
       }
 
-      // Store user info in the session, including role for role-based access
+      // Create JWT token
+      const token = jwt.sign(
+        { id: user.id, username: user.username, role: user.role },
+        process.env.JWT_SECRET || "your-secret-key",
+        { expiresIn: "24h" },
+      )
+
+      // Store user info in the session as well for backward compatibility
       req.session.user = { id: user.id, username: user.username, role: user.role }
 
       res.json({
         id: user.id,
         username: user.username,
         role: user.role,
+        token: token,
         message: "Login successful",
       })
     } catch (error) {
@@ -52,6 +62,9 @@ const authController = {
     // Check if the user is authenticated (session-based check)
     if (req.session.user) {
       return res.json({ user: req.session.user })
+    } else if (req.user) {
+      // JWT authentication
+      return res.json({ user: req.user })
     } else {
       return res.status(401).json({ message: "Not authenticated: User session not found" })
     }
@@ -62,6 +75,9 @@ const authController = {
     // This is an endpoint to verify if the user is authenticated
     if (req.session.user) {
       res.json({ message: "Authenticated", user: req.session.user })
+    } else if (req.user) {
+      // JWT authentication
+      res.json({ message: "Authenticated", user: req.user })
     } else {
       res.status(401).json({ message: "Not authenticated: User session not found" })
     }
@@ -70,9 +86,18 @@ const authController = {
   refreshUser: (req, res) => {
     if (req.session.user) {
       return res.json({ user: req.session.user })
+    } else if (req.user) {
+      // JWT authentication
+      return res.json({ user: req.user })
     } else {
       return res.status(401).json({ message: "Not authenticated: User session not found" })
     }
+  },
+
+  // Validate token endpoint
+  validateToken: (req, res) => {
+    // If middleware allowed this request, token is valid
+    return res.json({ valid: true })
   },
 }
 module.exports = authController
