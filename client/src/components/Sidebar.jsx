@@ -1,9 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { BarChart3, Calendar, CheckSquare,
-   Clock, Home, Menu, User, Users, X, 
-   DollarSign, Bell } from "lucide-react"
+import { BarChart3, Calendar, CheckSquare, Clock, Home, Menu, User, Users, X, DollarSign, Bell } from "lucide-react"
 import "./Sidebars.css"
 
 export default function Sidebar({ activeComponent, setActiveComponent, userRole }) {
