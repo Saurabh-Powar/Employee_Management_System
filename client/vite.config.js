@@ -28,6 +28,10 @@ export default defineConfig({
         rewrite: (path) => path.replace(/^\/api/, ""), // Rewrite paths for API calls
       },
     },
+    headers: {
+      "Content-Security-Policy": "default-src 'self'; script-src 'self'; object-src 'none';",
+      "X-Content-Type-Options": "nosniff",
+    },
   },
   define: {
     "process.env.BACKEND_URL": JSON.stringify("https://employee-management-system-gv8r.onrender.com"),
