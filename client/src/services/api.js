@@ -1,47 +1,41 @@
-// Updated API service with better error handling and CORS configuration
 import axios from "axios"
 
-// Create API instance with proper configuration
+// Use the specific backend URL provided
+const BACKEND_URL = "https://employee-management-system-gv8r.onrender.com"
+
 const api = axios.create({
-  baseURL: "https://employee-management-system-gv8r.onrender.com",
+  baseURL: BACKEND_URL,
   withCredentials: true,
-  timeout: 10000, // 10 second timeout
+  timeout: 15000, // Increased timeout for potentially slow responses on render.com
   headers: {
     "Content-Type": "application/json",
   },
 })
 
-// Add request interceptor to ensure auth headers are sent
+// Add a request interceptor to include auth token if available
 api.interceptors.request.use(
   (config) => {
-    // Get token from localStorage if available
     const token = localStorage.getItem("authToken")
     if (token) {
-      config.headers["Authorization"] = `Bearer ${token}`
+      config.headers.Authorization = `Bearer ${token}`
     }
     return config
   },
-  (error) => {
-    console.error("Request error:", error)
-    return Promise.reject(error)
-  },
+  (error) => Promise.reject(error),
 )
 
-// Add response interceptor with better error handling
+// Add a response interceptor to handle common errors
 api.interceptors.response.use(
-  (response) => {
-    return response
-  },
+  (response) => response,
   (error) => {
     // Handle network errors gracefully
     if (error.code === "ERR_NETWORK") {
       console.error("Network error - server may be down or CORS issue:", error.message)
-      // You could dispatch to a global error state here
     }
 
     // Handle authentication errors
     if (error.response && (error.response.status === 401 || error.response.status === 403)) {
-      console.error("Authentication error:", error.response.data)
+      console.error("Authentication error:", error.response?.data)
       // Only redirect if not already on login page to prevent redirect loops
       if (!window.location.pathname.includes("/login")) {
         window.location.href = "/login"
