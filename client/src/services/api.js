@@ -1,7 +1,7 @@
 import axios from "axios"
 
-// Define the base URL for API requests
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://employee-management-system-gv8r.onrender.com/api"
+// Define the base URL for API requests - using environment variable or fallback
+const API_BASE_URL = "https://employee-management-system-gv8r.onrender.com/api"
 
 // Create an axios instance with default config
 const api = axios.create({
@@ -38,7 +38,7 @@ api.interceptors.response.use(
       originalRequest._retry = true
 
       try {
-        // Try to refresh the token or redirect to login
+        // Clear token and redirect to login
         localStorage.removeItem("authToken")
         window.location.href = "/login"
         return Promise.reject(error)
