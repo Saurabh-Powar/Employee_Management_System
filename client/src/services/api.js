@@ -1,7 +1,8 @@
 import axios from "axios"
 
-// Use the specific backend URL provided
-const BACKEND_URL = "https://employee-management-system-gv8r.onrender.com"
+// Update the BACKEND_URL to use a relative path instead of hardcoded URL
+// This will make the app work regardless of where it's deployed
+const BACKEND_URL = "/api"
 
 const api = axios.create({
   baseURL: BACKEND_URL,
