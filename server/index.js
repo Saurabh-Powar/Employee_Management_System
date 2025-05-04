@@ -1,6 +1,7 @@
 const express = require("express")
 const cors = require("cors")
 const bodyParser = require("body-parser")
+const session = require("express-session")
 const createTables = require("./db/migrate")
 require("dotenv").config()
 
@@ -47,6 +48,21 @@ app.options("*", cors())
 // Body Parser
 app.use(bodyParser.json())
 app.use(bodyParser.urlencoded({ extended: true }))
+
+// Session Configuration
+const SESSION_SECRET = process.env.SESSION_SECRET || "your_session_secret_key_for_development"
+app.use(
+  session({
+    secret: SESSION_SECRET,
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      secure: process.env.NODE_ENV === "production", // Use secure cookies in production
+      httpOnly: true,
+      maxAge: 24 * 60 * 60 * 1000, // 24 hours
+    },
+  }),
+)
 
 // Root route for health check
 app.get("/", (req, res) => {
