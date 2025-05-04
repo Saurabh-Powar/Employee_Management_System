@@ -1,192 +1,103 @@
-"use client"
+// Simplify authentication controller to use JWT instead of sessions
+const bcrypt = require("bcrypt")
+const db = require("../db/sql")
+const jwt = require("jsonwebtoken")
 
-import { createContext, useContext, useState, useEffect } from "react"
-import authService from "../services/auth"
-
-const AuthContext = createContext({
-  user: null,
-  loading: true,
-  error: null,
-  login: async () => {},
-  logout: async () => {},
-  refreshUser: async () => {},
-  clearError: () => {},
-})
-
-export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
-  const [tokenRefreshTimer, setTokenRefreshTimer] = useState(null)
-
-  // Clear error function
-  const clearError = () => setError(null)
-
-  // Fetch user data from the server (on mount or refresh)
-  const fetchUser = async () => {
+const authController = {
+  // Login user
+  login: async (req, res) => {
+    const { username, password } = req.body
     try {
-      setError(null)
-      const userData = await authService.getUser()
-      if (userData && userData.user && userData.user.id && userData.user.role) {
-        setUser(userData.user)
-        setupTokenRefresh()
-      } else if (userData && userData.id && userData.role) {
-        setUser(userData)
-        setupTokenRefresh()
-      } else {
-        setUser(null)
-        clearTokenRefresh()
+      // Query the database to get the user details
+      const userResult = await db.query("SELECT * FROM users WHERE username = $1", [username])
+      const user = userResult.rows[0]
+
+      if (!user) {
+        return res.status(401).json({ message: "Invalid credentials: User not found" })
       }
+
+      // Compare password with hashed password in the database
+      const passwordMatch = await bcrypt.compare(password, user.password)
+      if (!passwordMatch) {
+        return res.status(401).json({ message: "Invalid credentials: Incorrect password" })
+      }
+
+      // Create JWT token
+      const token = jwt.sign(
+        { id: user.id, username: user.username, role: user.role },
+        process.env.JWT_SECRET || "your-secret-key",
+        { expiresIn: "24h" },
+      )
+
+      // Store user info in the session as well for backward compatibility
+      req.session.user = { id: user.id, username: user.username, role: user.role }
+
+      res.json({
+        id: user.id,
+        username: user.username,
+        role: user.role,
+        token: token,
+        message: "Login successful",
+      })
     } catch (error) {
-      console.error("Failed to fetch user:", error)
+      console.error("Login error:", error)
+      res.status(500).json({ message: "Login failed due to server error", error: error.message })
+    }
+  },
 
-      // Set a user-friendly error message
-      if (error.code === "ERR_NETWORK") {
-        setError("Unable to connect to the server. Please check your internet connection or try again later.")
-      } else if (error.response && error.response.status === 401) {
-        // Not authenticated - this is normal, don't show error
-        setUser(null)
-        clearTokenRefresh()
-      } else if (error.response && error.response.status === 404) {
-        // API endpoint not found - likely a configuration issue
-        console.error("API endpoint not found. Check server configuration.")
-        setUser(null)
-        clearTokenRefresh()
-      } else {
-        setError("An error occurred while fetching user data. Please try again.")
+  // Logout user
+  logout: (req, res) => {
+    // Destroy the session to log out
+    req.session.destroy((err) => {
+      if (err) {
+        console.error("Logout error:", err)
+        return res.status(500).json({ message: "Logout failed due to server error", error: err.message })
       }
+      res.json({ message: "Logged out successfully" })
+    })
+  },
 
-      setUser(null)
-    } finally {
-      setLoading(false)
+  // Get the logged-in user's information
+  getUser: (req, res) => {
+    // Check if the user is authenticated (session-based check)
+    if (req.session.user) {
+      return res.json({ user: req.session.user })
+    } else if (req.user) {
+      // JWT authentication
+      return res.json({ user: req.user })
+    } else {
+      return res.status(401).json({ message: "Not authenticated: User session not found" })
     }
-  }
+  },
 
-  // Setup token refresh timer (every 25 minutes to prevent 30-minute token expiration)
-  const setupTokenRefresh = () => {
-    clearTokenRefresh() // Clear any existing timer
-    const timer = setInterval(
-      async () => {
-        try {
-          // Validate and refresh token if needed
-          const isValid = await authService.validateToken()
-          if (!isValid) {
-            await authService.refreshUser()
-          }
-        } catch (error) {
-          console.error("Token refresh failed:", error)
-          // If refresh fails, we might need to logout the user
-          if (error.response && error.response.status === 401) {
-            logout()
-          }
-        }
-      },
-      25 * 60 * 1000,
-    ) // 25 minutes
-
-    setTokenRefreshTimer(timer)
-  }
-
-  // Clear token refresh timer
-  const clearTokenRefresh = () => {
-    if (tokenRefreshTimer) {
-      clearInterval(tokenRefreshTimer)
-      setTokenRefreshTimer(null)
+  // Check if the user is authenticated and return user info
+  checkAuth: (req, res) => {
+    // This is an endpoint to verify if the user is authenticated
+    if (req.session.user) {
+      res.json({ message: "Authenticated", user: req.session.user })
+    } else if (req.user) {
+      // JWT authentication
+      res.json({ message: "Authenticated", user: req.user })
+    } else {
+      res.status(401).json({ message: "Not authenticated: User session not found" })
     }
-  }
+  },
 
-  // Initial user fetch on app load
-  useEffect(() => {
-    fetchUser()
-
-    // Cleanup on unmount
-    return () => {
-      clearTokenRefresh()
+  refreshUser: (req, res) => {
+    if (req.session.user) {
+      return res.json({ user: req.session.user })
+    } else if (req.user) {
+      // JWT authentication
+      return res.json({ user: req.user })
+    } else {
+      return res.status(401).json({ message: "Not authenticated: User session not found" })
     }
-  }, [])
+  },
 
-  // Handle login process
-  const login = async (username, password) => {
-    try {
-      setLoading(true)
-      setError(null)
-      const data = await authService.login(username, password)
-
-      // Store token if provided
-      if (data.token) {
-        localStorage.setItem("authToken", data.token)
-      }
-
-      const loggedInUser = data.user || data
-      if (loggedInUser && loggedInUser.id && loggedInUser.role) {
-        setUser(loggedInUser)
-        setupTokenRefresh()
-      } else {
-        setUser(null)
-        setError("Invalid user data received from server")
-      }
-      return loggedInUser
-    } catch (error) {
-      console.error("Login failed:", error)
-
-      // Set user-friendly error messages
-      if (error.code === "ERR_NETWORK") {
-        setError("Unable to connect to the server. Please check your internet connection or try again later.")
-      } else if (error.response && error.response.status === 401) {
-        setError("Invalid username or password")
-      } else if (error.response && error.response.status === 404) {
-        setError("Login service not found. Please check server configuration.")
-      } else {
-        setError("Login failed. Please try again.")
-      }
-
-      throw error
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  // Handle logout process
-  const logout = async () => {
-    try {
-      setLoading(true)
-      setError(null)
-      await authService.logout()
-      // Clear token on logout
-      localStorage.removeItem("authToken")
-      clearTokenRefresh()
-    } catch (error) {
-      console.error("Logout failed:", error)
-      // Even if server logout fails, we still want to clear local state
-    } finally {
-      setUser(null)
-      setLoading(false)
-    }
-  }
-
-  // Refresh user info after profile/role updates
-  const refreshUser = async () => {
-    setLoading(true)
-    await fetchUser()
-  }
-
-  return (
-    <AuthContext.Provider
-      value={{
-        user,
-        loading,
-        error,
-        login,
-        logout,
-        refreshUser,
-        clearError,
-      }}
-    >
-      {children}
-    </AuthContext.Provider>
-  )
+  // Validate token endpoint
+  validateToken: (req, res) => {
+    // If middleware allowed this request, token is valid
+    return res.json({ valid: true })
+  },
 }
-
-export function useAuth() {
-  return useContext(AuthContext)
-}
+module.exports = authController
