@@ -8,6 +8,9 @@ export default defineConfig({
   build: {
     outDir: "dist",
     sourcemap: true,
+    rollupOptions: {
+      external: ['lucide-react'],
+    },
   },
   server: {
     port: 5173,
@@ -19,6 +22,7 @@ export default defineConfig({
       },
     },
   },
+  
   define: {
     // Define global constants at build time
     "process.env.BACKEND_URL": JSON.stringify("https://employee-management-system-gv8r.onrender.com"),
