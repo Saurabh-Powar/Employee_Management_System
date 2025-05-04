@@ -1,10 +1,5 @@
 const bcrypt = require("bcrypt")
-const jwt = require("jsonwebtoken")
 const db = require("../db/sql")
-
-// Get JWT secret from environment or use a default for development
-const JWT_SECRET = process.env.JWT_SECRET || "your_jwt_secret_key_for_development"
-
 
 const authController = {
   // Login user
@@ -25,24 +20,20 @@ const authController = {
         return res.status(401).json({ message: "Invalid credentials: Incorrect password" })
       }
 
-      // Create JWT token
-      const token = jwt.sign(
-        {
-          id: user.id,
-          username: user.username,
-          role: user.role,
-        },
-        JWT_SECRET
-      )
+      // Create session
+      req.session.user = {
+        id: user.id,
+        username: user.username,
+        role: user.role,
+      }
 
-      // Return user info and token
+      // Return user info
       res.json({
         user: {
           id: user.id,
           username: user.username,
           role: user.role,
         },
-        token,
         message: "Login successful",
       })
     } catch (error) {
@@ -51,17 +42,21 @@ const authController = {
     }
   },
 
-  // Logout user - client-side only with JWT
+  // Logout user
   logout: (req, res) => {
-    // With JWT, logout is handled on the client side by removing the token
-    res.json({ message: "Logged out successfully" })
+    req.session.destroy((err) => {
+      if (err) {
+        return res.status(500).json({ message: "Could not log out, please try again" })
+      }
+      res.clearCookie("connect.sid") // Clear the session cookie
+      res.json({ message: "Logged out successfully" })
+    })
   },
 
   // Get the logged-in user's information
   getUser: (req, res) => {
-    // User info is attached to req by the auth middleware
-    if (req.user) {
-      return res.json({ user: req.user })
+    if (req.session && req.session.user) {
+      return res.json({ user: req.session.user })
     } else {
       return res.status(401).json({ message: "Not authenticated" })
     }
@@ -69,9 +64,8 @@ const authController = {
 
   // Check if the user is authenticated and return user info
   checkAuth: (req, res) => {
-    // User info is attached to req by the auth middleware
-    if (req.user) {
-      res.json({ message: "Authenticated", user: req.user })
+    if (req.session && req.session.user) {
+      res.json({ message: "Authenticated", user: req.session.user })
     } else {
       res.status(401).json({ message: "Not authenticated" })
     }
@@ -79,17 +73,11 @@ const authController = {
 
   // Refresh user data
   refreshUser: (req, res) => {
-    if (req.user) {
-      return res.json({ user: req.user })
+    if (req.session && req.session.user) {
+      return res.json({ user: req.session.user })
     } else {
       return res.status(401).json({ message: "Not authenticated" })
     }
-  },
-
-  // Validate token
-  validateToken: (req, res) => {
-    // If middleware passed, token is valid
-    return res.json({ valid: true })
   },
 }
 
