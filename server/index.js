@@ -50,7 +50,7 @@ app.use(bodyParser.json())
 app.use(bodyParser.urlencoded({ extended: true }))
 
 // Session Configuration
-const SESSION_SECRET = process.env.SESSION_SECRET || "your_session_secret_key_for_development"
+const SESSION_SECRET = process.env.SESSION_SECRET || "587752a4f890101474dabd0d752cc1d4a0c8e620a98015c647d9707b540c542d957cc833e47d214c7a32afc5c776998add622c38195c393a0b3fdf453408d2ee"
 app.use(
   session({
     secret: SESSION_SECRET,
