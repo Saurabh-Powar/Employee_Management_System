@@ -17,22 +17,35 @@ const tasksRoutes = require("./routes/tasksRoutes")
 
 const app = express()
 
-// CORS Configuration - Updated for production URLs
-app.use((req, res, next) => {
-  res.setHeader("Access-Control-Allow-Origin", "https://employee-management-system-1-wj64.onrender.com")
-  res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization")
-  res.setHeader("Access-Control-Allow-Credentials", "true")
-  next()
-})
+// Define allowed origins
+const allowedOrigins = [
+  "https://employee-management-system-1-1wvc.onrender.com",
+  "https://employee-management-system-1-wj64.onrender.com",
+  "http://localhost:3000",
+  "http://localhost:5173",
+]
 
+// CORS Configuration - Updated for production URLs with better error handling
 app.use(
   cors({
-    origin: "https://employee-management-system-1-1wvc.onrender.com",
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps, curl requests)
+      if (!origin) return callback(null, true)
+
+      if (allowedOrigins.indexOf(origin) === -1) {
+        const msg = `The CORS policy for this site does not allow access from the specified Origin: ${origin}`
+        return callback(new Error(msg), false)
+      }
+      return callback(null, true)
+    },
     credentials: true,
-    methods: "GET,POST,PUT,DELETE,OPTIONS",
+    methods: "GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS",
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
   }),
 )
+
+// Pre-flight requests
+app.options("*", cors())
 
 // Body Parser
 app.use(bodyParser.json())
@@ -60,14 +73,15 @@ app.use(
     store: new pgSession({
       pool: pool,
       tableName: "sessions",
+      createTableIfMissing: true,
     }),
     secret: process.env.SESSION_SECRET || "default_secret_for_development",
     resave: false,
     saveUninitialized: false,
     cookie: {
       maxAge: 14 * 24 * 60 * 60 * 1000,
-      secure: true, // Always secure in production
-      sameSite: "none", // Allow cross-site cookies for our frontend-backend setup
+      secure: process.env.NODE_ENV === "production", // Secure in production
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", // Allow cross-site cookies in production
     },
   }),
 )
@@ -78,7 +92,14 @@ app.use(passport.session())
 
 // Root route for health check
 app.get("/", (req, res) => {
-  res.json({ status: "API is running", version: "1.0.0" })
+  res.json({
+    status: "API is running",
+    version: "1.0.0",
+    environment: process.env.NODE_ENV || "development",
+    cors: {
+      allowedOrigins,
+    },
+  })
 })
 
 // Routes
@@ -94,6 +115,16 @@ app.use("/api/tasks", tasksRoutes)
 // Centralized Error Handling
 app.use((err, req, res, next) => {
   console.error(err.stack)
+
+  // Handle CORS errors specifically
+  if (err.message.includes("CORS")) {
+    return res.status(403).json({
+      error: "CORS Error",
+      message: err.message,
+      allowedOrigins,
+    })
+  }
+
   res.status(500).json({
     error: "Something went wrong!",
     message: err.message,
@@ -111,6 +142,7 @@ createTables()
     app.listen(PORT, () => {
       console.log(`Server running on ${BACKEND_URL}`)
       console.log(`Environment: ${process.env.NODE_ENV || "development"}`)
+      console.log(`Allowed origins: ${allowedOrigins.join(", ")}`)
     })
   })
   .catch((err) => {
