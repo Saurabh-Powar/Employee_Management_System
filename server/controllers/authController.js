@@ -4,7 +4,7 @@ const db = require("../db/sql")
 
 // Get JWT secret from environment or use a default for development
 const JWT_SECRET = process.env.JWT_SECRET || "your_jwt_secret_key_for_development"
-const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "24h"
+
 
 const authController = {
   // Login user
@@ -32,8 +32,7 @@ const authController = {
           username: user.username,
           role: user.role,
         },
-        JWT_SECRET,
-        { expiresIn: JWT_EXPIRES_IN },
+        JWT_SECRET
       )
 
       // Return user info and token
