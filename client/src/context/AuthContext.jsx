@@ -17,6 +17,7 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [tokenRefreshTimer, setTokenRefreshTimer] = useState(null)
 
   // Clear error function
   const clearError = () => setError(null)
@@ -28,10 +29,13 @@ export function AuthProvider({ children }) {
       const userData = await authService.getUser()
       if (userData && userData.user && userData.user.id && userData.user.role) {
         setUser(userData.user)
+        setupTokenRefresh()
       } else if (userData && userData.id && userData.role) {
         setUser(userData)
+        setupTokenRefresh()
       } else {
         setUser(null)
+        clearTokenRefresh()
       }
     } catch (error) {
       console.error("Failed to fetch user:", error)
@@ -42,6 +46,7 @@ export function AuthProvider({ children }) {
       } else if (error.response && error.response.status === 401) {
         // Not authenticated - this is normal, don't show error
         setUser(null)
+        clearTokenRefresh()
       } else {
         setError("An error occurred while fetching user data. Please try again.")
       }
@@ -52,9 +57,47 @@ export function AuthProvider({ children }) {
     }
   }
 
+  // Setup token refresh timer (every 25 minutes to prevent 30-minute token expiration)
+  const setupTokenRefresh = () => {
+    clearTokenRefresh() // Clear any existing timer
+    const timer = setInterval(
+      async () => {
+        try {
+          // Validate and refresh token if needed
+          const isValid = await authService.validateToken()
+          if (!isValid) {
+            await authService.refreshUser()
+          }
+        } catch (error) {
+          console.error("Token refresh failed:", error)
+          // If refresh fails, we might need to logout the user
+          if (error.response && error.response.status === 401) {
+            logout()
+          }
+        }
+      },
+      25 * 60 * 1000,
+    ) // 25 minutes
+
+    setTokenRefreshTimer(timer)
+  }
+
+  // Clear token refresh timer
+  const clearTokenRefresh = () => {
+    if (tokenRefreshTimer) {
+      clearInterval(tokenRefreshTimer)
+      setTokenRefreshTimer(null)
+    }
+  }
+
   // Initial user fetch on app load
   useEffect(() => {
     fetchUser()
+
+    // Cleanup on unmount
+    return () => {
+      clearTokenRefresh()
+    }
   }, [])
 
   // Handle login process
@@ -72,6 +115,7 @@ export function AuthProvider({ children }) {
       const loggedInUser = data.user || data
       if (loggedInUser && loggedInUser.id && loggedInUser.role) {
         setUser(loggedInUser)
+        setupTokenRefresh()
       } else {
         setUser(null)
         setError("Invalid user data received from server")
@@ -85,6 +129,8 @@ export function AuthProvider({ children }) {
         setError("Unable to connect to the server. Please check your internet connection or try again later.")
       } else if (error.response && error.response.status === 401) {
         setError("Invalid username or password")
+      } else if (error.response && error.response.status === 404) {
+        setError("Login service not found. Please check server configuration.")
       } else {
         setError("Login failed. Please try again.")
       }
@@ -103,6 +149,7 @@ export function AuthProvider({ children }) {
       await authService.logout()
       // Clear token on logout
       localStorage.removeItem("authToken")
+      clearTokenRefresh()
     } catch (error) {
       console.error("Logout failed:", error)
       // Even if server logout fails, we still want to clear local state
