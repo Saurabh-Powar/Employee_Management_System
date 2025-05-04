@@ -9,6 +9,7 @@ const api = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
+  withCredentials: true, // Important for sending cookies with requests
 })
 
 // Add a request interceptor to include the auth token in all requests
@@ -25,7 +26,7 @@ api.interceptors.request.use(
   },
 )
 
-// Add a response interceptor to handle token expiration
+// Add a response interceptor to handle authentication errors
 api.interceptors.response.use(
   (response) => {
     return response
@@ -33,18 +34,16 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config
 
-    // If the error is due to an expired token and we haven't tried to refresh yet
+    // If the error is due to an authentication issue and we haven't tried to redirect yet
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true
 
       try {
-        // Clear token and redirect to login
-        localStorage.removeItem("authToken")
+        // Redirect to login
         window.location.href = "/login"
         return Promise.reject(error)
       } catch (refreshError) {
         // If refresh fails, redirect to login
-        localStorage.removeItem("authToken")
         window.location.href = "/login"
         return Promise.reject(refreshError)
       }
