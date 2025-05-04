@@ -1,71 +1,49 @@
 "use client"
 
-import { BrowserRouter as Router, Route, Navigate, Routes } from "react-router-dom"
-import { AuthProvider, useAuth } from "./context/AuthContext.jsx"
-import Login from "./pages/login.jsx"
-import ManagerPage from "./pages/ManagerPage.jsx"
-import EmployeePage from "./pages/EmployeePage.jsx"
-import AdminPage from "./pages/AdminPage.jsx"
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom"
+import { useAuth } from "./context/AuthContext"
+import Login from "./pages/login"
+import AdminPage from "./pages/AdminPage"
+import ManagerPage from "./pages/ManagerPage"
+import EmployeePage from "./pages/EmployeePage"
+import NetworkStatusIndicator from "./components/NetworkStatusIndicator"
 import "./AppS.css"
 
-// Main App component wrapped with AuthProvider
 function App() {
-  return (
-    <AuthProvider>
-      <Router>
-        <AppContent />
-      </Router>
-    </AuthProvider>
-  )
-}
+  const { user, loading, error } = useAuth()
 
-function AppContent() {
-  const { user, loading } = useAuth()
-
-  // Show loading state while checking auth
   if (loading) {
-    return <div className="spinner">Loading...</div>
+    return (
+      <div className="loading-container">
+        <div className="loading-spinner"></div>
+        <p>Loading...</p>
+      </div>
+    )
   }
 
   return (
-    <Routes>
-      {/* Redirect logged-in users away from login */}
-      <Route path="/login" element={user ? <Navigate to="/" replace /> : <Login />} />
-
-      {/* Role-based routing */}
-      <Route
-        path="/"
-        element={
-          user ? (
-            user.role === "admin" ? (
+    <Router>
+      <NetworkStatusIndicator />
+      {error && <div className="global-error-message">{error}</div>}
+      <Routes>
+        <Route path="/login" element={user ? <Navigate to="/" /> : <Login />} />
+        <Route
+          path="/"
+          element={
+            !user ? (
+              <Navigate to="/login" />
+            ) : user.role === "admin" ? (
               <AdminPage />
             ) : user.role === "manager" ? (
               <ManagerPage />
-            ) : user.role === "employee" ? (
-              <EmployeePage />
             ) : (
-              <Navigate to="/login" replace />
+              <EmployeePage />
             )
-          ) : (
-            <Navigate to="/login" replace />
-          )
-        }
-      />
-
-      {/* Add routes for direct access to role pages */}
-      <Route path="/admin" element={user && user.role === "admin" ? <AdminPage /> : <Navigate to="/login" replace />} />
-      <Route
-        path="/manager"
-        element={user && user.role === "manager" ? <ManagerPage /> : <Navigate to="/login" replace />}
-      />
-      <Route
-        path="/employee"
-        element={user && user.role === "employee" ? <EmployeePage /> : <Navigate to="/login" replace />}
-      />
-
-      {/* Catch all other routes and redirect to login */}
-      <Route path="*" element={<Navigate to="/login" replace />} />
-    </Routes>
+          }
+        />
+        <Route path="*" element={<Navigate to="/" />} />
+      </Routes>
+    </Router>
   )
 }
 
