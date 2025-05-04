@@ -1,10 +1,14 @@
-// Updated API service to connect to production backend
+// Updated API service with better error handling and CORS configuration
 import axios from "axios"
 
-// Use the production backend URL
+// Create API instance with proper configuration
 const api = axios.create({
-  baseURL: "https://employee-management-system-gv8r.onrender.com/api",
+  baseURL: "https://employee-management-system-d658.onrender.com/api",
   withCredentials: true,
+  timeout: 10000, // 10 second timeout
+  headers: {
+    "Content-Type": "application/json",
+  },
 })
 
 // Add request interceptor to ensure auth headers are sent
@@ -18,52 +22,173 @@ api.interceptors.request.use(
     return config
   },
   (error) => {
+    console.error("Request error:", error)
     return Promise.reject(error)
   },
 )
 
-// Add response interceptor to handle auth errors
+// Add response interceptor with better error handling
 api.interceptors.response.use(
   (response) => {
     return response
   },
   (error) => {
+    // Handle network errors gracefully
+    if (error.code === "ERR_NETWORK") {
+      console.error("Network error - server may be down or CORS issue:", error.message)
+      // You could dispatch to a global error state here
+    }
+
+    // Handle authentication errors
     if (error.response && (error.response.status === 401 || error.response.status === 403)) {
       console.error("Authentication error:", error.response.data)
-      // Redirect to login page on authentication errors
-      window.location.href = "/login"
+      // Only redirect if not already on login page to prevent redirect loops
+      if (!window.location.pathname.includes("/login")) {
+        window.location.href = "/login"
+      }
     }
+
     return Promise.reject(error)
   },
 )
 
-// Attendance-related helpers
+// Attendance-related helpers with improved error handling
 export const attendanceAPI = {
-  checkIn: (employee_id) => api.post("/attendance/checkin", { employeeId: employee_id }),
+  checkIn: async (employee_id) => {
+    try {
+      const response = await api.post("/attendance/checkin", { employeeId: employee_id })
+      return response.data
+    } catch (error) {
+      console.error("Check-in failed:", error)
+      throw error
+    }
+  },
 
-  checkOut: (employee_id) => api.put("/attendance/checkout", { employeeId: employee_id }),
+  checkOut: async (employee_id) => {
+    try {
+      const response = await api.put("/attendance/checkout", { employeeId: employee_id })
+      return response.data
+    } catch (error) {
+      console.error("Check-out failed:", error)
+      throw error
+    }
+  },
 
-  markAbsent: (employee_id) => api.post("/attendance/absent", { employeeId: employee_id }),
+  markAbsent: async (employee_id) => {
+    try {
+      const response = await api.post("/attendance/absent", { employeeId: employee_id })
+      return response.data
+    } catch (error) {
+      console.error("Mark absent failed:", error)
+      throw error
+    }
+  },
 
-  getEmployeeAttendanceStatus: (employee_id) => api.get(`/attendance/${employee_id}`),
+  getEmployeeAttendanceStatus: async (employee_id) => {
+    try {
+      const response = await api.get(`/attendance/${employee_id}`)
+      return response.data
+    } catch (error) {
+      console.error(`Failed to get attendance for employee ${employee_id}:`, error)
+      throw error
+    }
+  },
 
-  getAllAttendanceRecords: () => api.get("/attendance"),
+  getAllAttendanceRecords: async () => {
+    try {
+      const response = await api.get("/attendance")
+      return response.data
+    } catch (error) {
+      console.error("Failed to get all attendance records:", error)
+      throw error
+    }
+  },
 }
 
-// Salary-related helpers
+// Salary-related helpers with improved error handling
 export const salaryAPI = {
-  getAllSalaries: () => api.get("/salaries"),
-  getEmployeeSalaries: (employee_id) => api.get(`/salaries/${employee_id}`),
-  createSalary: (data) => api.post("/salaries", data),
-  updateSalaryStatus: (id, status) => api.put(`/salaries/${id}`, { status }),
+  getAllSalaries: async () => {
+    try {
+      const response = await api.get("/salaries")
+      return response.data
+    } catch (error) {
+      console.error("Failed to get all salaries:", error)
+      throw error
+    }
+  },
+
+  getEmployeeSalaries: async (employee_id) => {
+    try {
+      const response = await api.get(`/salaries/${employee_id}`)
+      return response.data
+    } catch (error) {
+      console.error(`Failed to get salaries for employee ${employee_id}:`, error)
+      throw error
+    }
+  },
+
+  createSalary: async (data) => {
+    try {
+      const response = await api.post("/salaries", data)
+      return response.data
+    } catch (error) {
+      console.error("Failed to create salary:", error)
+      throw error
+    }
+  },
+
+  updateSalaryStatus: async (id, status) => {
+    try {
+      const response = await api.put(`/salaries/${id}`, { status })
+      return response.data
+    } catch (error) {
+      console.error(`Failed to update salary status for ${id}:`, error)
+      throw error
+    }
+  },
 }
 
-// Leave API utilities
+// Leave API utilities with improved error handling
 export const leavesAPI = {
-  getAllLeaves: () => api.get("/leaves"),
-  getEmployeeLeaves: (employeeId) => api.get(`/leaves/${employeeId}`),
-  createLeave: (data) => api.post("/leaves", data),
-  updateLeaveStatus: (id, status) => api.put(`/leaves/${id}`, { status }),
+  getAllLeaves: async () => {
+    try {
+      const response = await api.get("/leaves")
+      return response.data
+    } catch (error) {
+      console.error("Failed to get all leaves:", error)
+      throw error
+    }
+  },
+
+  getEmployeeLeaves: async (employeeId) => {
+    try {
+      const response = await api.get(`/leaves/${employeeId}`)
+      return response.data
+    } catch (error) {
+      console.error(`Failed to get leaves for employee ${employeeId}:`, error)
+      throw error
+    }
+  },
+
+  createLeave: async (data) => {
+    try {
+      const response = await api.post("/leaves", data)
+      return response.data
+    } catch (error) {
+      console.error("Failed to create leave:", error)
+      throw error
+    }
+  },
+
+  updateLeaveStatus: async (id, status) => {
+    try {
+      const response = await api.put(`/leaves/${id}`, { status })
+      return response.data
+    } catch (error) {
+      console.error(`Failed to update leave status for ${id}:`, error)
+      throw error
+    }
+  },
 }
 
 // Task-related helpers with improved error handling
